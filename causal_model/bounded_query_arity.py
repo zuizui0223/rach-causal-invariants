@@ -1,28 +1,39 @@
 """Sharp bounded-query-arity extremal layer for the CCOC relay family.
 
-This module isolates the part of the relay theorem that depends on routing/query
-arity. For a fixed integer ``b >= 2``, a prefix-selector pulse probe uses:
+The explicit ``fire`` action is a query terminator.  Therefore a memory site need
+not be a terminal leaf: the selector may stop and fire at an internal relay and,
+on another query, continue routing through that same relay to a descendant.
+This observation yields the strongest exact extremum in the canonical
+selector--pulse architecture.
 
-* at most ``b`` routing choices at each selector step;
-* one terminal memory leaf per exterior bit;
-* one ``fire`` action after the address; and
-* radius-one return propagation, one edge per ``tick``.
+For routing arity ``b`` and maximum selector depth ``h``, at most
 
-If a leaf has selector depth ``d``, its canonical query length is ``2*d + 2``.
-The exact minimax selector depth over ``m`` terminal leaves is
-``ceil(log_b(m))`` by the prefix-code/Kraft bound, and a fixed-length ``b``-ary
-code attains equality. Therefore the exact minimax worst query length in this
-declared architecture class is
+    S_b(h) = 1 + b + ... + b**h
 
-    2 * ceil(log_b(m)) + 2.
+memory-bearing selector positions can be distinguished by route words of length
+at most ``h``.  A full ``b``-ary trie with one dormant bit at every body node
+attains this bound.  A node at selector depth ``d`` is queried by ``d`` route
+actions, one ``fire``, and ``d+1`` radius-one return ticks, so its exact probe
+length is ``2*d+2``.
 
-The unary boundary is explicit: with ``b == 1`` a prefix-free terminal selector
-can address only one leaf. Thus ``m == 1`` has depth zero and query length two,
-while ``m > 1`` is infeasible.
+Consequently the exact minimax depth for ``m`` dormant bits is the least ``h``
+with ``S_b(h) >= m``.  For ``b>=2`` this is
 
-The finite certificate below checks one supplied ``(m, b)`` construction. The
-quantified proof lives in
-``docs/bounded_query_arity_sharp_extremal_2026-09-07.md``.
+    ceil(log_b((b-1)*m + 1)) - 1,
+
+while for ``b==1`` it is ``m-1``.  The corresponding exact worst query length is
+``2*h+2``.  In inverse form, a budget ``L>=2`` can expose exactly
+``S_b(floor((L-2)/2))`` independently recoverable one-bit exterior coordinates.
+
+The older terminal-leaf relay is retained as a stricter compatibility subclass.
+There the addresses must be prefix-free, Kraft gives depth
+``ceil(log_b(m))`` for ``b>=2``, and unary routing can address only one terminal
+leaf.  That leaf-only result recovers the existing fixed-regular binary theorem,
+but it is not the unrestricted selector--pulse optimum once internal nodes are
+allowed to carry the same one-bit memory.
+
+Finite certificates below check one supplied construction.  The quantified
+proof is in ``docs/bounded_query_arity_sharp_extremal_2026-09-07.md``.
 """
 
 from __future__ import annotations
@@ -79,11 +90,7 @@ def bounded_query_open_grammar(query_arity: int) -> FinitePrefixGrammar:
 
 
 def ceil_log_base(module_count: int, query_arity: int) -> int:
-    """Return exact integer ``ceil(log_b(m))`` without floating point.
-
-    ``m == 1`` returns zero for every positive ``b``. The unary case with
-    ``m > 1`` is infeasible and therefore raises ``ValueError``.
-    """
+    """Exact ``ceil(log_b(m))`` used by the terminal-leaf subclass."""
     _validate_positive_integer(module_count, "module_count")
     _validate_positive_integer(query_arity, "query_arity")
     if module_count == 1:
@@ -113,8 +120,61 @@ def _fixed_width_base_word(index: int, width: int, base: int) -> Address:
     return tuple(digits)
 
 
+def maximum_addressable_nodes(query_arity: int, selector_depth: int) -> int:
+    """Sharp number ``S_b(h)`` of selector positions through depth ``h``."""
+    _validate_positive_integer(query_arity, "query_arity")
+    _validate_nonnegative_integer(selector_depth, "selector_depth")
+    if query_arity == 1:
+        return selector_depth + 1
+    return (query_arity ** (selector_depth + 1) - 1) // (query_arity - 1)
+
+
+def minimum_node_selector_depth(module_count: int, query_arity: int) -> int:
+    """Least depth whose route-word capacity can address ``module_count`` nodes."""
+    _validate_positive_integer(module_count, "module_count")
+    _validate_positive_integer(query_arity, "query_arity")
+    if query_arity == 1:
+        return module_count - 1
+
+    depth = 0
+    frontier = 1
+    capacity = 1
+    while capacity < module_count:
+        frontier *= query_arity
+        capacity += frontier
+        depth += 1
+    return depth
+
+
+def sharp_node_addresses(module_count: int, query_arity: int) -> tuple[Address, ...]:
+    """Breadth-first prefix-closed addresses attaining the node-depth optimum."""
+    _validate_positive_integer(module_count, "module_count")
+    _validate_positive_integer(query_arity, "query_arity")
+
+    addresses: list[Address] = []
+    depth = 0
+    while len(addresses) < module_count:
+        for index in range(query_arity**depth):
+            addresses.append(_fixed_width_base_word(index, depth, query_arity))
+            if len(addresses) == module_count:
+                return tuple(addresses)
+        depth += 1
+    raise AssertionError("unreachable address-construction state")
+
+
+def is_prefix_closed(addresses: Iterable[Address]) -> bool:
+    """Whether every selected non-root node has its selector parent present."""
+    normalized = tuple(tuple(address) for address in addresses)
+    if not normalized or len(set(normalized)) != len(normalized):
+        return False
+    address_set = set(normalized)
+    if () not in address_set:
+        return False
+    return all(address[:-1] in address_set for address in normalized if address)
+
+
 def sharp_prefix_addresses(module_count: int, query_arity: int) -> tuple[Address, ...]:
-    """Return a prefix-free address family attaining the minimax depth."""
+    """Prefix-free terminal-leaf addresses attaining the leaf-only minimax depth."""
     depth = ceil_log_base(module_count, query_arity)
     if module_count == 1:
         return ((),)
@@ -138,7 +198,7 @@ def is_prefix_free(addresses: Iterable[Address]) -> bool:
 
 
 def kraft_sum(addresses: Iterable[Address], query_arity: int) -> Fraction:
-    """Return the exact Kraft sum for a candidate prefix code."""
+    """Exact Kraft sum for a candidate terminal-leaf prefix code."""
     _validate_positive_integer(query_arity, "query_arity")
     normalized = tuple(tuple(address) for address in addresses)
     if query_arity == 1:
@@ -150,7 +210,7 @@ def kraft_sum(addresses: Iterable[Address], query_arity: int) -> Fraction:
 
 
 def canonical_probe_word(address: Address) -> ProbeWord:
-    """Encode selector descent, one fire, and one-edge-per-tick return."""
+    """Selector descent, one explicit fire delimiter, and radius-one return."""
     normalized = tuple(address)
     for symbol in normalized:
         _validate_nonnegative_integer(symbol, "address symbol")
@@ -162,7 +222,7 @@ def canonical_probe_word(address: Address) -> ProbeWord:
 
 
 def maximum_addressable_leaves(query_arity: int, selector_depth: int) -> int:
-    """Sharp number of terminal leaves addressable with max selector depth."""
+    """Sharp number of terminal leaves at maximum selector depth ``h``."""
     _validate_positive_integer(query_arity, "query_arity")
     _validate_nonnegative_integer(selector_depth, "selector_depth")
     if query_arity == 1:
@@ -170,19 +230,36 @@ def maximum_addressable_leaves(query_arity: int, selector_depth: int) -> int:
     return query_arity**selector_depth
 
 
-def maximum_innovation_bits_for_query_budget(query_arity: int, query_budget: int) -> int:
-    """Sharp innovation-bit capacity of this one-bit-per-leaf architecture.
-
-    A canonical probe at selector depth ``d`` has length ``2*d+2``. Hence a
-    budget below two cannot address a terminal memory leaf. For larger budgets
-    the maximum feasible depth is ``floor((L-2)/2)``.
-    """
+def maximum_terminal_leaf_innovation_bits_for_query_budget(
+    query_arity: int,
+    query_budget: int,
+) -> int:
+    """Sharp leaf-only one-bit innovation capacity under a query budget."""
     _validate_positive_integer(query_arity, "query_arity")
     _validate_nonnegative_integer(query_budget, "query_budget")
     if query_budget < 2:
         return 0
     selector_depth = (query_budget - 2) // 2
     return maximum_addressable_leaves(query_arity, selector_depth)
+
+
+def maximum_innovation_bits_for_query_budget(query_arity: int, query_budget: int) -> int:
+    """Sharp node-addressed one-bit innovation capacity under query budget ``L``."""
+    _validate_positive_integer(query_arity, "query_arity")
+    _validate_nonnegative_integer(query_budget, "query_budget")
+    if query_budget < 2:
+        return 0
+    selector_depth = (query_budget - 2) // 2
+    return maximum_addressable_nodes(query_arity, selector_depth)
+
+
+def maximum_open_interface_state_count_for_query_budget(
+    query_arity: int,
+    query_budget: int,
+) -> int:
+    """Open quotient size when the focal bit and all addressable node bits vary."""
+    innovation_bits = maximum_innovation_bits_for_query_budget(query_arity, query_budget)
+    return 2 ** (innovation_bits + 1)
 
 
 def _trie_child_counts(addresses: tuple[Address, ...]) -> tuple[int, ...]:
@@ -196,7 +273,7 @@ def _trie_child_counts(addresses: tuple[Address, ...]) -> tuple[int, ...]:
 
 @dataclass(frozen=True)
 class BoundedQueryArityExtremalCertificate:
-    """Finite ``(m,b)`` certificate for the exact prefix-selector extremum."""
+    """Finite certificate for the strongest memory-bearing-node extremum."""
 
     module_count: int
     query_arity: int
@@ -208,7 +285,7 @@ class BoundedQueryArityExtremalCertificate:
 
     @property
     def lower_bound_selector_depth(self) -> int:
-        return ceil_log_base(self.module_count, self.query_arity)
+        return minimum_node_selector_depth(self.module_count, self.query_arity)
 
     @property
     def worst_query_length(self) -> int:
@@ -217,6 +294,14 @@ class BoundedQueryArityExtremalCertificate:
     @property
     def exact_worst_query_formula(self) -> int:
         return 2 * self.lower_bound_selector_depth + 2
+
+    @property
+    def selector_capacity_at_depth(self) -> int:
+        return maximum_addressable_nodes(self.query_arity, self.selector_depth)
+
+    @property
+    def selector_capacity_slack(self) -> int:
+        return self.selector_capacity_at_depth - self.module_count
 
     @property
     def action_alphabet(self) -> tuple[str, ...]:
@@ -275,7 +360,7 @@ class BoundedQueryArityExtremalCertificate:
 
     @property
     def maximum_graph_degree_bound(self) -> int:
-        # Every non-focal trie node has one parent plus at most b children.
+        # The body root also has the one focal-parent edge.
         return max(1, self.maximum_trie_outdegree + 1)
 
     @property
@@ -283,18 +368,21 @@ class BoundedQueryArityExtremalCertificate:
         return 1
 
     @property
-    def kraft_sum(self) -> Fraction:
-        return kraft_sum(self.addresses, self.query_arity)
+    def selector_augmented_body_state_count_bound(self) -> int:
+        # permanent bit x pulse(empty/0/1) x selector flag
+        return 2 * 3 * 2
+
+    @property
+    def pulse_message_alphabet_size(self) -> int:
+        return 3
 
     def verify(self) -> bool:
         try:
             _validate_positive_integer(self.module_count, "module_count")
             _validate_positive_integer(self.query_arity, "query_arity")
-            if self.query_arity == 1 and self.module_count > 1:
-                return False
             if len(self.addresses) != self.module_count:
                 return False
-            if not is_prefix_free(self.addresses):
+            if not is_prefix_closed(self.addresses):
                 return False
             if any(
                 symbol >= self.query_arity
@@ -302,15 +390,23 @@ class BoundedQueryArityExtremalCertificate:
                 for symbol in address
             ):
                 return False
-            if self.kraft_sum > 1:
-                return False
             if self.selector_depth != self.lower_bound_selector_depth:
+                return False
+            if self.selector_capacity_at_depth < self.module_count:
+                return False
+            if self.selector_depth > 0 and maximum_addressable_nodes(
+                self.query_arity, self.selector_depth - 1
+            ) >= self.module_count:
                 return False
             if self.worst_query_length != self.exact_worst_query_formula:
                 return False
             if self.maximum_trie_outdegree > self.query_arity:
                 return False
             if self.maximum_graph_degree_bound > self.query_arity + 1:
+                return False
+            if self.selector_augmented_body_state_count_bound != 12:
+                return False
+            if self.pulse_message_alphabet_size != 3:
                 return False
             if self.closed_grammar.state_count != 1 or self.open_grammar.state_count != 1:
                 return False
@@ -343,15 +439,95 @@ def certify_bounded_query_arity_extremal(
     module_count: int,
     query_arity: int,
 ) -> BoundedQueryArityExtremalCertificate:
-    """Construct and verify one sharp finite ``(m,b)`` witness."""
-    addresses = sharp_prefix_addresses(module_count, query_arity)
+    """Construct and verify one sharp memory-bearing-node witness."""
     certificate = BoundedQueryArityExtremalCertificate(
         module_count=module_count,
         query_arity=query_arity,
-        addresses=addresses,
+        addresses=sharp_node_addresses(module_count, query_arity),
     )
     if not certificate.verify():
         raise AssertionError("bounded-query-arity extremal certificate did not verify")
+    return certificate
+
+
+@dataclass(frozen=True)
+class TerminalLeafBoundedQueryArityExtremalCertificate:
+    """Finite certificate for the stricter prefix-free terminal-leaf subclass."""
+
+    module_count: int
+    query_arity: int
+    addresses: tuple[Address, ...]
+
+    @property
+    def selector_depth(self) -> int:
+        return max(len(address) for address in self.addresses)
+
+    @property
+    def lower_bound_selector_depth(self) -> int:
+        return ceil_log_base(self.module_count, self.query_arity)
+
+    @property
+    def worst_query_length(self) -> int:
+        return max(len(canonical_probe_word(address)) for address in self.addresses)
+
+    @property
+    def exact_worst_query_formula(self) -> int:
+        return 2 * self.lower_bound_selector_depth + 2
+
+    @property
+    def open_only_innovation_bits(self) -> int:
+        return self.module_count
+
+    @property
+    def maximum_trie_outdegree(self) -> int:
+        counts = _trie_child_counts(self.addresses)
+        return max(counts, default=0)
+
+    @property
+    def kraft_sum(self) -> Fraction:
+        return kraft_sum(self.addresses, self.query_arity)
+
+    def verify(self) -> bool:
+        try:
+            _validate_positive_integer(self.module_count, "module_count")
+            _validate_positive_integer(self.query_arity, "query_arity")
+            if self.query_arity == 1 and self.module_count > 1:
+                return False
+            if len(self.addresses) != self.module_count:
+                return False
+            if not is_prefix_free(self.addresses):
+                return False
+            if any(
+                symbol >= self.query_arity
+                for address in self.addresses
+                for symbol in address
+            ):
+                return False
+            if self.kraft_sum > 1:
+                return False
+            if self.selector_depth != self.lower_bound_selector_depth:
+                return False
+            if self.worst_query_length != self.exact_worst_query_formula:
+                return False
+            if self.maximum_trie_outdegree > self.query_arity:
+                return False
+            return True
+        except (TypeError, ValueError):
+            return False
+
+
+def certify_terminal_leaf_bounded_query_arity_extremal(
+    module_count: int,
+    query_arity: int,
+) -> TerminalLeafBoundedQueryArityExtremalCertificate:
+    """Construct the sharp prefix-free terminal-leaf compatibility witness."""
+    certificate = TerminalLeafBoundedQueryArityExtremalCertificate(
+        module_count=module_count,
+        query_arity=query_arity,
+        addresses=sharp_prefix_addresses(module_count, query_arity),
+    )
+    if not certificate.verify():
+        raise AssertionError("terminal-leaf bounded-query-arity certificate did not verify")
     return certificate
 
 
@@ -361,17 +537,25 @@ __all__ = [
     "Address",
     "ProbeWord",
     "BoundedQueryArityExtremalCertificate",
+    "TerminalLeafBoundedQueryArityExtremalCertificate",
     "bounded_query_action_alphabet",
     "bounded_query_closed_grammar",
     "bounded_query_open_grammar",
     "canonical_probe_word",
     "ceil_log_base",
     "certify_bounded_query_arity_extremal",
+    "certify_terminal_leaf_bounded_query_arity_extremal",
+    "is_prefix_closed",
     "is_prefix_free",
     "kraft_sum",
     "maximum_addressable_leaves",
+    "maximum_addressable_nodes",
     "maximum_innovation_bits_for_query_budget",
+    "maximum_open_interface_state_count_for_query_budget",
+    "maximum_terminal_leaf_innovation_bits_for_query_budget",
+    "minimum_node_selector_depth",
     "route_action",
     "routing_actions",
+    "sharp_node_addresses",
     "sharp_prefix_addresses",
 ]
