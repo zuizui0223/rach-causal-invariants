@@ -1,5 +1,6 @@
 import pytest
 
+import causal_model.portability_core as core
 from causal_model.bounded_query_arity import (
     BoundedQueryArityExtremalCertificate,
     canonical_probe_word,
@@ -100,6 +101,12 @@ def test_binary_case_recovers_existing_fixed_regular_query_length() -> None:
 )
 def test_inverse_query_budget_extremum(query_arity: int, query_budget: int, expected_bits: int) -> None:
     assert maximum_innovation_bits_for_query_budget(query_arity, query_budget) == expected_bits
+
+
+def test_bounded_query_arity_surface_is_public() -> None:
+    assert core.BoundedQueryArityExtremalCertificate is BoundedQueryArityExtremalCertificate
+    assert core.certify_bounded_query_arity_extremal is certify_bounded_query_arity_extremal
+    assert core.maximum_innovation_bits_for_query_budget is maximum_innovation_bits_for_query_budget
 
 
 def test_invalid_parameters_fail_closed() -> None:
