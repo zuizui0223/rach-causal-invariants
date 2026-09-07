@@ -2,7 +2,8 @@
 
 This script is intentionally narrower than the full historical repository.  It
 replays one finite instance for exact-interface semantics and operational
-addressability, then checks the binary sharpness family and the positive/local
+addressability, checks the binary relay sharpness family, checks representative
+members of the bounded-query-arity extremal family, and checks the positive/local
 negative conservative-schema boundary.  It is reproducibility evidence for the
 declared finite objects; it is not a substitute for the symbolic proofs in the
 manuscript.
@@ -17,6 +18,10 @@ import platform
 from pathlib import Path
 from typing import Any
 
+from causal_model.bounded_query_arity import (
+    certify_bounded_query_arity_extremal,
+    maximum_innovation_bits_for_query_budget,
+)
 from causal_model.coherent_portable_macrolaw import inert_portable_chain, newly_legal_word_obstruction
 from causal_model.conservative_macro_schema import conservative_reveal_chain, newly_legal_action_merge_obstruction
 from causal_model.extension_compression_noncommutation import exhaustive_noncommutation_summary
@@ -78,14 +83,33 @@ def build_report() -> dict[str, Any]:
     _assert_verified(closed, "declared finite closed-context factorization")
 
     # CORE-3: the theorem-schema and relay implementation agree for the first six
-    # binary family members.  This is an exhaustive finite replay of each member,
-    # not a proof of the all-m theorem.
+    # binary terminal-leaf family members.  This is an exhaustive finite replay of
+    # each member, not a proof of the all-m theorem.
     noncommutation_family = exhaustive_noncommutation_summary(6)
     relay_family = exhaustive_compilation_summary(6)
     for certificate in noncommutation_family:
         _assert_verified(certificate, f"noncommutation family m={certificate.module_count}")
     for certificate in relay_family:
         _assert_verified(certificate, f"relay family m={certificate.module_count}")
+
+    # CORE-3 bounded-query-arity strengthening.  Each case exactly fills a
+    # selector-depth capacity: unary depth 3, binary depth 2, ternary depth 2,
+    # and quaternary depth 2.  The analytic all-(m,b) proof remains in the docs.
+    bounded_query_cases = ((4, 1), (7, 2), (13, 3), (21, 4))
+    bounded_query_family = tuple(
+        certify_bounded_query_arity_extremal(module_count=m, query_arity=b)
+        for m, b in bounded_query_cases
+    )
+    for certificate in bounded_query_family:
+        _assert_verified(
+            certificate,
+            f"bounded-query family m={certificate.module_count},b={certificate.query_arity}",
+        )
+        if maximum_innovation_bits_for_query_budget(
+            certificate.query_arity,
+            certificate.worst_query_length,
+        ) != certificate.module_count:
+            raise AssertionError("inverse bounded-query extremum did not match finite witness")
 
     # CORE-4/5: one finite positive conservative expansion and two local negative
     # certificates (a future word and a newly legal action) establish the paper's
@@ -108,6 +132,7 @@ def build_report() -> dict[str, Any]:
             "proof_status": "finite replay and regression evidence; symbolic theorem proofs remain manuscript obligations",
             "product_object": "declared product-indexed subset of states; this replay does not infer reachability from an initial condition",
             "closed_contract": "the operational closed-context witness enumerates its complete declared finite word family",
+            "bounded_query_contract": "exact coefficient applies to the declared one-bit-per-selected-node selector + fire + radius-one-return architecture",
         },
         "core_1_exact_interface": {
             "canonical_blocks": canonical_interface.canonical_block_count,
@@ -142,6 +167,18 @@ def build_report() -> dict[str, Any]:
                 "maximum_degree": certificate.grammar.maximum_degree,
             }
             for certificate in relay_family
+        ],
+        "core_3_bounded_query_arity": [
+            {
+                "module_count": certificate.module_count,
+                "query_arity": certificate.query_arity,
+                "selector_depth": certificate.selector_depth,
+                "worst_query_length": certificate.worst_query_length,
+                "innovation_bits": certificate.open_only_innovation_bits,
+                "maximum_degree_bound": certificate.maximum_graph_degree_bound,
+                "local_body_state_count_bound": certificate.selector_augmented_body_state_count_bound,
+            }
+            for certificate in bounded_query_family
         ],
         "core_4_5_portability_boundary": {
             "inert_chain_stage_count": len(inert_chain.stages),
