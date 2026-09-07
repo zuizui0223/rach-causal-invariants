@@ -13,7 +13,7 @@ A current registry entry means its source, tests, documentation, and replay rout
 |---|---|---|---|
 | `CORE-1` | foundation: exact grammar-aware dynamic interface | exact finite theorem | `causal_model/grammar_aware_blankets.py` |
 | `CORE-2` | **headline: cross-grammar addressability / extension--compression lower bound** | lower-bound obstruction | `causal_model/extension_compression_noncommutation.py` |
-| `CORE-3` | headline support: bounded-local extremal realization | sharpness witness | `causal_model/relay_tree_compilation.py` + fixed-regular strengthening |
+| `CORE-3` | headline support: bounded-local extremal realization + sharp bounded-query-arity access | sharpness witness | `causal_model/extremal_open_composition.py` + `causal_model/bounded_query_arity.py` |
 | `CORE-4` | supporting positive boundary only | sufficient criterion | `causal_model/coherent_portable_macrolaw.py`, `causal_model/conservative_macro_schema.py` |
 | `CORE-5` | supporting local obstruction only | local obstruction | `causal_model/conservative_macro_schema.py` |
 
@@ -27,7 +27,22 @@ Under declared joint realization and operational future separation, the open gra
 
 ### `CORE-3`
 
-The explicit relay realizes the separation with bounded-local structure; the strengthened family uses one newly legal primitive action and fixed control grammar. Historical realization firstness remains separately controlled.
+The explicit relay realizes the separation with bounded-local structure; the binary strengthened family uses one newly legal primitive action and fixed control grammar. The query-arity layer is now exact inside the canonical prefix-selector + `fire` + radius-one return-pulse architecture:
+
+\[
+H_b^*(m)=\lceil\log_bm\rceil,
+\qquad
+L_b^*(m)=2\lceil\log_bm\rceil+2
+\quad(b\ge2),
+\]
+
+with the separate unary boundary that `b=1` can address only one terminal leaf. In inverse form, a worst query budget `L>=2` exposes at most, and can exactly attain,
+
+\[
+b^{\lfloor(L-2)/2\rfloor}
+\]
+
+independently recoverable one-bit exterior coordinates. The exact coefficient is architecture-specific and is not promoted to arbitrary bounded-local or adaptive query systems. Historical realization firstness remains separately controlled.
 
 ### `CORE-4`
 
