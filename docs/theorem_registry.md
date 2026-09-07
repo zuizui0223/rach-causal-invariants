@@ -27,22 +27,52 @@ Under declared joint realization and operational future separation, the open gra
 
 ### `CORE-3`
 
-The explicit relay realizes the separation with bounded-local structure; the binary strengthened family uses one newly legal primitive action and fixed control grammar. The query-arity layer is now exact inside the canonical prefix-selector + `fire` + radius-one return-pulse architecture:
+The explicit relay realizes the separation with bounded-local structure. The query-arity layer is now exact inside the canonical selector + explicit `fire` delimiter + radius-one return-pulse architecture with one dormant binary coordinate per selected body node.
+
+With routing arity `b` and selector depth `h`, the exact number of selectable memory-bearing body positions is
 
 \[
-H_b^*(m)=\lceil\log_bm\rceil,
-\qquad
-L_b^*(m)=2\lceil\log_bm\rceil+2
-\quad(b\ge2),
+S_b(h)=\sum_{d=0}^{h}b^d.
 \]
 
-with the separate unary boundary that `b=1` can address only one terminal leaf. In inverse form, a worst query budget `L>=2` exposes at most, and can exactly attain,
+Hence the sharp depth is the least `h` with `S_b(h)>=m`. For `b>=2`,
 
 \[
-b^{\lfloor(L-2)/2\rfloor}
+H_b^*(m)=\left\lceil\log_b((b-1)m+1)\right\rceil-1,
 \]
 
-independently recoverable one-bit exterior coordinates. The exact coefficient is architecture-specific and is not promoted to arbitrary bounded-local or adaptive query systems. Historical realization firstness remains separately controlled.
+and for `b=1`, `H_1^*(m)=m-1`. The exact worst canonical query length is
+
+\[
+L_b^*(m)=2H_b^*(m)+2.
+\]
+
+Thus for `b>=2`,
+
+\[
+L_b^*(m)=2\left\lceil\log_b((b-1)m+1)\right\rceil,
+\]
+
+while `L_1^*(m)=2m`.
+
+With a worst query budget `L>=2`, the exact maximum number of independently recoverable dormant one-bit coordinates is
+
+\[
+\iota_{\rm new}^{\max}(b,L)
+=S_b\!\left(\left\lfloor\frac{L-2}{2}\right\rfloor\right).
+\]
+
+A fixed arity bound alone does not cap the interface gap, because increasing query depth makes `S_b(h)` unbounded.
+
+The stronger construction retains one-edge focal/exterior cut, degree at most `b+1`, at most 12 selector-augmented body states, a three-symbol pulse alphabet, and one newly legal `fire` grammar transition. The exact coefficient is architecture-specific and is not promoted to arbitrary bounded-local or adaptive query systems.
+
+The old terminal-leaf relay remains as a stricter compatibility theorem: prefix-freeness/Kraft gives
+
+\[
+L_{b,\mathrm{leaf}}^*(m)=2\lceil\log_bm\rceil+2
+\]
+
+for `b>=2`, exactly recovering the existing binary fixed-regular theorem at `b=2`. Historical realization firstness remains separately controlled.
 
 ### `CORE-4`
 
