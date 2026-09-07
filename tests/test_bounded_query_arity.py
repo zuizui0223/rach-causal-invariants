@@ -190,6 +190,9 @@ def test_terminal_leaf_unary_boundary_is_explicit() -> None:
 
 
 def test_terminal_binary_case_recovers_existing_fixed_regular_query_length() -> None:
+    # The existing fixed-regular certificate exhaustively enumerates 2**(m+1)
+    # comparison states.  Keep this cross-implementation regression finite and
+    # use the closed-form/counting tests above for arbitrary-m sharpness.
     for module_count in range(1, 9):
         terminal = certify_terminal_leaf_bounded_query_arity_extremal(module_count, 2)
         existing = certify_fixed_regular_extremal_theorem(module_count)
@@ -197,8 +200,10 @@ def test_terminal_binary_case_recovers_existing_fixed_regular_query_length() -> 
 
 
 def test_node_addressed_binary_never_worse_than_terminal_existing_relay() -> None:
+    # Do not turn a formula-level regression into exponential exhaustive replay:
+    # m=8 already checks all binary depth transitions through depth three.
     strict_improvements = 0
-    for module_count in range(1, 17):
+    for module_count in range(1, 9):
         node_addressed = certify_bounded_query_arity_extremal(module_count, 2)
         existing = certify_fixed_regular_extremal_theorem(module_count)
         assert node_addressed.worst_query_length <= existing.worst_canonical_query_length
