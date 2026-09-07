@@ -1,4 +1,4 @@
-# CCOC current theorem and proof spine — 2026-08-17
+# CCOC current theorem and proof spine — 2026-09-07
 
 CCOC has one current publication spine. This document lists only the present CORE-1–CORE-5 proof dependencies. Historical non-nested replacement, mechanism-uncertainty, evidence-design, feedback, ecological special-case, and other removed branches are not part of the current CCOC theorem chain.
 
@@ -81,7 +81,7 @@ K_O-K_C=m,
 
 under one fixed four-symbol primitive alphabet, with opening adding one primitive action, while the interaction graph remains a degree-at-most-three tree with one-edge focal/exterior cut and bounded local alphabets.
 
-### Proof source
+### Binary fixed-regular proof source
 
 `docs/fixed_regular_extremal_theorem_2026-08-13.md` gives the all-`m` proof:
 
@@ -94,6 +94,43 @@ under one fixed four-symbol primitive alphabet, with opening adding one primitiv
 7. exact logarithmic query length.
 
 Executable `certify_fixed_regular_extremal_theorem(m)` checks one finite supplied `m`; it is not the quantified proof itself.
+
+### Bounded query arity strengthening
+
+For a fixed routing/query arity bound `b`, the prefix-selector + one-`fire` + radius-one return-pulse realization has an exact minimax access theorem.
+
+For every `b>=2`, the minimum possible maximum selector depth for `m` terminal memory leaves is
+
+\[
+H_b^*(m)=\lceil\log_bm\rceil,
+\]
+
+and therefore the exact minimum worst canonical query length is
+
+\[
+\boxed{
+L_b^*(m)=2\lceil\log_bm\rceil+2.
+}
+\]
+
+The lower bound is Kraft/prefix-tree capacity; a fixed-length `b`-ary code gives the matching construction. The unary boundary is separate: `b=1` can address exactly one terminal leaf, so `m=1` has query length 2 and `m>1` is infeasible.
+
+Equivalently, with a worst query budget `L>=2` and one dormant binary response coordinate per leaf, the exact maximum innovation realizable by this architecture is
+
+\[
+\boxed{
+\iota_{\rm new}^{\max}(b,L)
+=b^{\lfloor(L-2)/2\rfloor}
+}
+\]
+
+for `b>=2`; for `b=1` it is one bit. This inverse extremum is attained by the full depth-`floor((L-2)/2)` `b`-ary tree.
+
+Proof: `docs/bounded_query_arity_sharp_extremal_2026-09-07.md`.
+
+Executable surface: `causal_model/bounded_query_arity.py`, with `certify_bounded_query_arity_extremal(m, b)` and `maximum_innovation_bits_for_query_budget(b, L)`.
+
+The exact coefficient is scoped to the declared selector-pulse architecture. It is not claimed as a universal exact latency theorem for arbitrary bounded-local systems; the broader causal-cone result supplies only the order-level lower bound without this architecture restriction.
 
 CORE-3 is sharpness support for CORE-2, not a second independent headline lower bound.
 
@@ -139,6 +176,7 @@ CORE-1  canonical exact interface
    +--> CORE-2  operational cross-grammar lower bound  [headline]
    |        |
    |        +--> CORE-3  bounded-local equality/sharpness witness
+   |                  +--> exact bounded-query-arity selector-pulse extremum
    |
    +--> CORE-4  positive sufficient portability boundary
             |
