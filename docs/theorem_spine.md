@@ -1,4 +1,4 @@
-# CCOC current theorem and proof spine — 2026-08-17
+# CCOC current theorem and proof spine — 2026-09-07
 
 CCOC has one current publication spine. This document lists only the present CORE-1–CORE-5 proof dependencies. Historical non-nested replacement, mechanism-uncertainty, evidence-design, feedback, ecological special-case, and other removed branches are not part of the current CCOC theorem chain.
 
@@ -69,7 +69,7 @@ The proof is an operational injection using declared decoder words, not an arith
 
 ## 3. CORE-3 — bounded-local extremal sharpness
 
-For every `m>=1`, the fixed-regular relay family has
+For every `m>=1`, the fixed-regular binary relay family has
 
 \[
 |P_C|=2,
@@ -81,9 +81,9 @@ K_O-K_C=m,
 
 under one fixed four-symbol primitive alphabet, with opening adding one primitive action, while the interaction graph remains a degree-at-most-three tree with one-edge focal/exterior cut and bounded local alphabets.
 
-### Proof source
+### Binary fixed-regular proof source
 
-`docs/fixed_regular_extremal_theorem_2026-08-13.md` gives the all-`m` proof:
+`docs/fixed_regular_extremal_theorem_2026-08-13.md` gives the all-`m` terminal-leaf proof:
 
 1. fixed grammar and total local dynamics;
 2. closed all-word invariant;
@@ -91,9 +91,101 @@ under one fixed four-symbol primitive alphabet, with opening adding one primitiv
 4. discreteness of the open quotient;
 5. exact capacity sharpness;
 6. bounded locality and one-edge cut; and
-7. exact logarithmic query length.
+7. exact terminal-leaf binary query length
+   \[
+   2\lceil\log_2m\rceil+2.
+   \]
 
 Executable `certify_fixed_regular_extremal_theorem(m)` checks one finite supplied `m`; it is not the quantified proof itself.
+
+### Strong bounded query arity theorem
+
+The explicit `fire` action is an address delimiter, so a dormant coordinate need not sit at a terminal leaf. A relay-body node may both store one dormant bit and route later queries to descendants.
+
+With at most `b` routing choices per selector step, the exact number of distinct memory-bearing selector positions through depth `h` is
+
+\[
+\boxed{
+S_b(h)=\sum_{d=0}^{h}b^d
+=
+\begin{cases}
+(b^{h+1}-1)/(b-1), & b\ge2,\\
+h+1, & b=1.
+\end{cases}}
+\]
+
+Therefore the exact minimum worst selector depth for `m` dormant one-bit coordinates is
+
+\[
+\boxed{
+H_b^*(m)=\min\{h:S_b(h)\ge m\}.
+}
+\]
+
+For `b>=2`,
+
+\[
+\boxed{
+H_b^*(m)=
+\left\lceil\log_b((b-1)m+1)\right\rceil-1,
+}
+\]
+
+while
+
+\[
+\boxed{H_1^*(m)=m-1.}
+\]
+
+A query to depth `d` costs exactly `d` route actions, one `fire`, and `d+1` return ticks. Hence
+
+\[
+\boxed{L_b^*(m)=2H_b^*(m)+2.}
+\]
+
+Equivalently,
+
+\[
+\boxed{
+L_b^*(m)=2\left\lceil\log_b((b-1)m+1)\right\rceil
+\quad(b\ge2),
+}
+\]
+
+and `L_1^*(m)=2m`.
+
+In inverse form, a worst query budget `L>=2` permits exactly
+
+\[
+\boxed{
+\iota_{\rm new}^{\max}(b,L)
+=S_b\!\left(\left\lfloor\frac{L-2}{2}\right\rfloor\right)
+}
+\]
+
+independently recoverable one-bit dormant coordinates in this selector-pulse class. With the focal bit included, the maximum open quotient size is `2^(1+iota_new^max)`.
+
+A bound on `b` alone does **not** bound interface inflation: allowing query depth to grow makes `S_b(h)` unbounded for every fixed `b>=1`.
+
+The matching trie has outdegree at most `b`, undirected degree at most `b+1`, one-edge focal/exterior cut, at most 12 selector-augmented local body states, and a three-symbol pulse alphabet. The action alphabet has size `b+2` for each fixed `b`.
+
+Proof: `docs/bounded_query_arity_sharp_extremal_2026-09-07.md`.
+
+Executable surface: `causal_model/bounded_query_arity.py`, with `certify_bounded_query_arity_extremal(m, b)` and `maximum_innovation_bits_for_query_budget(b, L)`.
+
+### Terminal-leaf compatibility corollary
+
+If dormant coordinates are additionally restricted to terminal leaves, Kraft/prefix-freeness gives instead
+
+\[
+H_{b,\mathrm{leaf}}^*(m)=\lceil\log_bm\rceil,
+\qquad
+L_{b,\mathrm{leaf}}^*(m)=2\lceil\log_bm\rceil+2
+\]
+
+for `b>=2`. This recovers the existing binary fixed-regular query theorem at `b=2`. For `b=1`, the terminal-leaf subclass can address only one leaf, whereas the stronger memory-bearing-node class supports an arbitrary unary chain.
+
+The exact coefficients above are scoped to the declared selector + `fire` + radius-one-return architecture. They are not claimed for arbitrary bounded-local, adaptive, parallel, or richer-state query systems; the broader causal-cone theorem supplies only an architecture-agnostic order-level obstruction.
 
 CORE-3 is sharpness support for CORE-2, not a second independent headline lower bound.
 
@@ -139,6 +231,8 @@ CORE-1  canonical exact interface
    +--> CORE-2  operational cross-grammar lower bound  [headline]
    |        |
    |        +--> CORE-3  bounded-local equality/sharpness witness
+   |                  +--> exact node-addressed bounded-query-arity extremum
+   |                  +--> terminal-leaf/Kraft compatibility corollary
    |
    +--> CORE-4  positive sufficient portability boundary
             |
